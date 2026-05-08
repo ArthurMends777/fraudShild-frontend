@@ -1,3 +1,73 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-cyan: #00CAD5;
+  --primary-blue: #2563EB;
+  --dark-blue: #1E3A8A;
+  --light-bg: #F8FAFC;
+  --dark-text: #1F2937;
+  --bg-dark: #071025;
+  --bg-dark-secondary: #0B152D;
+  --result-safe: #22C55E;
+  --result-warning: #F59E0B;
+  --result-danger: #EF4444;
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
+}
+
+body {
+  font-family: 'Saira', sans-serif;
+  text-transform: uppercase;
+  background-color: var(--bg-dark);
+  color: #F8FAFC;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body.light-mode {
+  background-color: #F0F4F8;
+  color: #1F2937;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: 'Saira', sans-serif;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, textarea, select {
+  font-family: 'Saira', sans-serif;
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-cyan);
+  border-radius: 3px;
+}
+
+.light-mode ::-webkit-scrollbar-track {
+  background: #E2E8F0;
+}
+
+.light-mode ::-webkit-scrollbar-thumb {
+  background: var(--primary-blue);
+}

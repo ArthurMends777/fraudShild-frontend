@@ -1,0 +1,210 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background: var(--bg-dark-secondary);
+  border-right: 1px solid rgba(0, 202, 213, 0.15);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.light-mode .sidebar {
+  background: #ffffff;
+  border-right: 1px solid #E2E8F0;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(0, 202, 213, 0.1);
+}
+
+.light-mode .sidebar-header {
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  color: var(--primary-cyan);
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+.collapse-btn {
+  background: rgba(0, 202, 213, 0.1);
+  border: none;
+  color: var(--primary-cyan);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.collapse-btn:hover {
+  background: rgba(0, 202, 213, 0.2);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 202, 213, 0.1);
+}
+
+.light-mode .sidebar-user {
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 11px;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: lowercase;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: rgba(248, 250, 252, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.light-mode .nav-item {
+  color: rgba(31, 41, 55, 0.7);
+}
+
+.nav-item:hover {
+  background: rgba(0, 202, 213, 0.1);
+  color: var(--primary-cyan);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(0, 202, 213, 0.15), rgba(37, 99, 235, 0.15));
+  color: var(--primary-cyan);
+  font-weight: 600;
+}
+
+.light-mode .nav-item.active {
+  background: linear-gradient(135deg, rgba(0, 202, 213, 0.1), rgba(37, 99, 235, 0.1));
+  color: var(--primary-blue);
+}
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid rgba(0, 202, 213, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.light-mode .sidebar-footer {
+  border-top: 1px solid #E2E8F0;
+}
+
+.theme-toggle,
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: none;
+  color: rgba(248, 250, 252, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+}
+
+.light-mode .theme-toggle,
+.light-mode .logout-btn {
+  color: rgba(31, 41, 55, 0.7);
+}
+
+.theme-toggle:hover {
+  background: rgba(0, 202, 213, 0.1);
+  color: var(--primary-cyan);
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--result-danger);
+}
