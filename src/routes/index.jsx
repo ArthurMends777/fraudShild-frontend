@@ -18,6 +18,13 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function AdminRoute({ children }) {
+  const { user } = useApp()
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role !== 'admin') return <Navigate to="/app/dashboard" replace />
+  return children
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -37,8 +44,8 @@ export function AppRoutes() {
         <Route path="analise" element={<Analysis />} />
         <Route path="simulador" element={<Simulator />} />
         <Route path="historico" element={<History />} />
-        <Route path="admin" element={<Admin />} />
-        <Route path="usuarios" element={<UsersPage />} />
+        <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="usuarios" element={<AdminRoute><UsersPage /></AdminRoute>} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

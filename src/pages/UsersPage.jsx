@@ -1,42 +1,72 @@
-import { useState } from 'react'
-import { Search, MoreVertical, UserPlus, Shield, Ban, CheckCircle } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Search, MoreVertical, UserPlus, Shield, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { adminService } from '../services/adminService'
 import './UsersPage.css'
 
-const mockUsers = [
-  { id: 1, name: 'Maria Silva', email: 'maria@email.com', role: 'Admin', status: 'active', analyses: 47, joined: '2024-01-15' },
-  { id: 2, name: 'Joao Santos', email: 'joao@email.com', role: 'Usuario', status: 'active', analyses: 23, joined: '2024-02-20' },
-  { id: 3, name: 'Ana Oliveira', email: 'ana@email.com', role: 'Usuario', status: 'active', analyses: 56, joined: '2024-01-08' },
-  { id: 4, name: 'Carlos Lima', email: 'carlos@email.com', role: 'Moderador', status: 'inactive', analyses: 12, joined: '2024-03-10' },
-  { id: 5, name: 'Fernanda Costa', email: 'fernanda@email.com', role: 'Usuario', status: 'active', analyses: 34, joined: '2024-02-28' },
-  { id: 6, name: 'Ricardo Alves', email: 'ricardo@email.com', role: 'Usuario', status: 'blocked', analyses: 0, joined: '2024-04-05' },
-  { id: 7, name: 'Juliana Mendes', email: 'juliana@email.com', role: 'Usuario', status: 'active', analyses: 18, joined: '2024-03-22' },
-  { id: 8, name: 'Pedro Souza', email: 'pedro@email.com', role: 'Moderador', status: 'active', analyses: 91, joined: '2024-01-03' },
-]
+const ROLES = ['user', 'admin', 'moderador']
 
 export default function UsersPage() {
+  const [users, setUsers]           = useState([])
+  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 })
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterRole, setFilterRole] = useState('all')
+  const [page, setPage]             = useState(1)
+  const [openMenu, setOpenMenu]     = useState(null) // userId com menu aberto
 
-  const filtered = mockUsers.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filterStatus === 'all' || u.status === filterStatus
-    return matchesSearch && matchesStatus
-  })
+  const fetchUsers = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await adminService.getUsers({ search: searchTerm || undefined, role: filterRole, page, limit: 10 })
+      setUsers(data.users)
+      setPagination(data.pagination)
+    } catch {
+      setError('Erro ao carregar usuários.')
+    } finally {
+      setLoading(false)
+    }
+  }, [searchTerm, filterRole, page])
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'active': return <span className="status-badge active"><CheckCircle size={12} /> Ativo</span>
-      case 'inactive': return <span className="status-badge inactive"><Ban size={12} /> Inativo</span>
-      case 'blocked': return <span className="status-badge blocked"><Shield size={12} /> Bloqueado</span>
-      default: return null
+  useEffect(() => { setPage(1) }, [searchTerm, filterRole])
+  useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  const handleRoleChange = async (userId, role) => {
+    try {
+      await adminService.updateUserRole(userId, role)
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
+    } catch {
+      alert('Erro ao atualizar função.')
+    }
+    setOpenMenu(null)
+  }
+
+  const handleDelete = async (userId) => {
+    if (!confirm('Tem certeza que deseja remover este usuário?')) return
+    try {
+      await adminService.deleteUser(userId)
+      setUsers(prev => prev.filter(u => u.id !== userId))
+      setPagination(prev => ({ ...prev, total: prev.total - 1 }))
+    } catch {
+      alert('Erro ao remover usuário.')
+    }
+    setOpenMenu(null)
+  }
+
+  const getRoleBadgeClass = (role) => {
+    switch (role) {
+      case 'admin':     return 'role-badge admin'
+      case 'moderador': return 'role-badge moderador'
+      default:          return 'role-badge'
     }
   }
 
   return (
-    <div className="users-page">
+    <div className="users-page" onClick={() => setOpenMenu(null)}>
       <div className="page-header">
-        <h1>Usuarios</h1>
-        <p>Gerenciamento de usuarios do sistema</p>
+        <h1>Usuários</h1>
+        <p>Gerenciamento de usuários do sistema</p>
       </div>
 
       <div className="users-toolbar">
@@ -44,61 +74,96 @@ export default function UsersPage() {
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            placeholder="Buscar usuario..."
+            placeholder="Buscar usuário..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="users-filter">
-          <option value="all">Todos</option>
-          <option value="active">Ativos</option>
-          <option value="inactive">Inativos</option>
-          <option value="blocked">Bloqueados</option>
-        </select>
-
+        <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="users-filter">
+          <option value="all">Todas as funções</option>
+          <option value="user">Usuário</option>
+          <option value="moderador">Moderador</option>
+          <option value="admin">Admin</option>
+        </select>          
         <button className="btn-add-user">
           <UserPlus size={16} />
           Novo usuario
         </button>
       </div>
 
-      <div className="users-table-container">
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Funcao</th>
-              <th>Status</th>
-              <th>Analises</th>
-              <th>Cadastro</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(user => (
-              <tr key={user.id}>
-                <td>
-                  <div className="user-cell">
-                    <div className="user-cell-avatar">{user.name.charAt(0)}</div>
-                    <div className="user-cell-info">
-                      <span className="user-cell-name">{user.name}</span>
-                      <span className="user-cell-email">{user.email}</span>
-                    </div>
-                  </div>
-                </td>
-                <td><span className="role-badge">{user.role}</span></td>
-                <td>{getStatusBadge(user.status)}</td>
-                <td className="analyses-count">{user.analyses}</td>
-                <td className="join-date">{new Date(user.joined).toLocaleDateString('pt-BR')}</td>
-                <td>
-                  <button className="btn-more"><MoreVertical size={16} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading ? (
+        <p>Carregando...</p>
+      ) : error ? (
+        <p className="error-msg">{error}</p>
+      ) : (
+        <>
+          <div className="users-table-container">
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Função</th>
+                  <th>Análises</th>
+                  <th>Cadastro</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="user-cell">
+                        <div className="user-cell-avatar">{user.name.charAt(0)}</div>
+                        <div className="user-cell-info">
+                          <span className="user-cell-name">{user.name}</span>
+                          <span className="user-cell-email">{user.email}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span className={getRoleBadgeClass(user.role)}>{user.role}</span></td>
+                    <td className="analyses-count">{user._count.analyses}</td>
+                    <td className="join-date">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <div className="action-menu-wrapper">
+                        <button className="btn-more" onClick={() => setOpenMenu(openMenu === user.id ? null : user.id)}>
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenu === user.id && (
+                          <div className="action-menu">
+                            <p className="action-menu-title">Alterar função</p>
+                            {ROLES.filter(r => r !== user.role).map(role => (
+                              <button key={role} className="action-menu-item" onClick={() => handleRoleChange(user.id, role)}>
+                                <Shield size={14} /> Tornar {role}
+                              </button>
+                            ))}
+                            <hr />
+                            <button className="action-menu-item danger" onClick={() => handleDelete(user.id)}>
+                              <Trash2 size={14} /> Remover usuário
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {pagination.pages > 1 && (
+            <div className="pagination">
+              <button className="pagination-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+                <ChevronLeft size={16} /> Anterior
+              </button>
+              <span className="pagination-info">Página {pagination.page} de {pagination.pages}</span>
+              <button className="pagination-btn" onClick={() => setPage(p => p + 1)} disabled={page === pagination.pages}>
+                Próxima <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -18,19 +18,21 @@ import {
 import './Sidebar.css'
 
 const navItems = [
-  { path: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/app/analise', icon: Search, label: 'Analise' },
-  { path: '/app/simulador', icon: Gamepad2, label: 'Simulador' },
-  { path: '/app/historico', icon: History, label: 'Historico' },
-  { path: '/app/admin', icon: ShieldCheck, label: 'Administracao' },
-  { path: '/app/usuarios', icon: Users, label: 'Usuarios' },
-  { path: '/app/configuracoes', icon: Settings, label: 'Configuracoes' },
+  { path: '/app/dashboard',     icon: LayoutDashboard, label: 'Dashboard',    adminOnly: false },
+  { path: '/app/analise',       icon: Search,          label: 'Analise',      adminOnly: false },
+  { path: '/app/simulador',     icon: Gamepad2,        label: 'Simulador',    adminOnly: false },
+  { path: '/app/historico',     icon: History,         label: 'Historico',    adminOnly: false },
+  { path: '/app/admin',         icon: ShieldCheck,     label: 'Administracao',adminOnly: true  },
+  { path: '/app/usuarios',      icon: Users,           label: 'Usuarios',     adminOnly: true  },
+  { path: '/app/configuracoes', icon: Settings,        label: 'Configuracoes',adminOnly: false },
 ]
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { user, logout, darkMode, toggleDarkMode } = useApp()
   const navigate = useNavigate()
+  const isAdmin = user?.role === 'admin'
+  const visibleItems = navItems.filter(item => !item.adminOnly || isAdmin)
 
   const handleLogout = () => {
     logout()
@@ -55,12 +57,13 @@ export default function Sidebar() {
           <div className="user-info">
             <span className="user-name">{user.name}</span>
             <span className="user-email">{user.email}</span>
+            {isAdmin && <span className="user-role-badge">Admin</span>}
           </div>
         </div>
       )}
 
       <nav className="sidebar-nav">
-        {navItems.map(item => (
+        {visibleItems.map(item => (
           <NavLink
             key={item.path}
             to={item.path}
