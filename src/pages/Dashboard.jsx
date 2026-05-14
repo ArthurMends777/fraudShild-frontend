@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/useApp'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import {
@@ -14,6 +15,7 @@ import {
   Filler
 } from 'chart.js'
 import { ShieldCheck, AlertTriangle, Search, TrendingUp } from 'lucide-react'
+import { dashboardService } from '../services/dashboardService'
 import './Dashboard.css'
 
 ChartJS.register(
@@ -29,29 +31,49 @@ ChartJS.register(
   Filler
 )
 
-export default function Dashboard() {
-  const { user, analysisHistory, darkMode } = useApp()
+const resultLabel = {
+  TRUE: 'Confiável',
+  SUSPECT: 'Suspeito',
+  FALSE: 'Alto Risco',
+}
 
-  const totalAnalyses = analysisHistory.length
-  const safeCount = analysisHistory.filter(a => a.risk === 'safe').length
-  const warningCount = analysisHistory.filter(a => a.risk === 'warning').length
-  const dangerCount = analysisHistory.filter(a => a.risk === 'danger').length
+const resultClass = {
+  TRUE: 'safe',
+  SUSPECT: 'warning',
+  FALSE: 'danger',
+}
+
+export default function Dashboard() {
+  const { user, darkMode } = useApp()
+  const [dashData, setDashData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    dashboardService.getDashboard()
+      .then(setDashData)
+      .catch(() => setError('Erro ao carregar dashboard.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const textColor = darkMode ? '#F8FAFC' : '#1F2937'
   const gridColor = darkMode ? 'rgba(248,250,252,0.06)' : 'rgba(31,41,55,0.08)'
 
-  const stats = [
-    { label: 'Total de analises', value: totalAnalyses, icon: Search, color: '#00CAD5' },
-    { label: 'Confiaveis', value: safeCount, icon: ShieldCheck, color: '#22C55E' },
-    { label: 'Suspeitos', value: warningCount, icon: AlertTriangle, color: '#F59E0B' },
-    { label: 'Alto risco', value: dangerCount, icon: TrendingUp, color: '#EF4444' },
-  ]
+  const stats = dashData ? [
+    { label: 'Total de análises', value: dashData.stats.total,      icon: Search,        color: '#00CAD5' },
+    { label: 'Confiáveis',        value: dashData.stats.confiaveis,  icon: ShieldCheck,   color: '#22C55E' },
+    { label: 'Suspeitos',         value: dashData.stats.suspeitos,   icon: AlertTriangle, color: '#F59E0B' },
+    { label: 'Alto risco',        value: dashData.stats.altoRisco,   icon: TrendingUp,    color: '#EF4444' },
+  ] : []
 
+  // Gráfico de barras — byType do backend
+  const byTypeLabels = dashData ? Object.keys(dashData.byType) : []
+  const byTypeValues = dashData ? Object.values(dashData.byType) : []
   const barData = {
-    labels: ['Phishing', 'Fake News', 'Golpe PIX', 'Fraude', 'Spam', 'Malware'],
+    labels: byTypeLabels,
     datasets: [{
-      label: 'Deteccoes',
-      data: [23, 35, 18, 12, 28, 8],
+      label: 'Detecções',
+      data: byTypeValues,
       backgroundColor: [
         'rgba(0, 202, 213, 0.7)',
         'rgba(37, 99, 235, 0.7)',
@@ -64,21 +86,32 @@ export default function Dashboard() {
     }]
   }
 
+  // Gráfico de rosca — stats
   const doughnutData = {
-    labels: ['Confiavel', 'Suspeito', 'Alto Risco'],
+    labels: ['Confiável', 'Suspeito', 'Alto Risco'],
     datasets: [{
-      data: [safeCount || 45, warningCount || 30, dangerCount || 25],
+      data: dashData
+        ? [dashData.stats.confiaveis, dashData.stats.suspeitos, dashData.stats.altoRisco]
+        : [0, 0, 0],
       backgroundColor: ['#22C55E', '#F59E0B', '#EF4444'],
       borderWidth: 0,
       cutout: '70%',
     }]
   }
 
+  const byMonthEntries = dashData
+    ? Object.entries(dashData.byMonth).sort(([a], [b]) => a.localeCompare(b))
+    : []
+  const lineLabels = byMonthEntries.map(([key]) => {
+    const [year, month] = key.split('-')
+    return new Date(year, month - 1).toLocaleString('pt-BR', { month: 'short' })
+  })
+  const lineValues = byMonthEntries.map(([, v]) => v)
   const lineData = {
-    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+    labels: lineLabels,
     datasets: [{
-      label: 'Analises',
-      data: [120, 190, 150, 280, 220, 350],
+      label: 'Análises',
+      data: lineValues,
       borderColor: '#00CAD5',
       backgroundColor: 'rgba(0, 202, 213, 0.1)',
       fill: true,
@@ -120,11 +153,14 @@ export default function Dashboard() {
     }
   }
 
+  if (loading) return <div className="dashboard"><p>Carregando...</p></div>
+  if (error)   return <div className="dashboard"><p className="error-msg">{error}</p></div>
+
   return (
     <div className="dashboard">
       <div className="page-header">
         <h1>Dashboard</h1>
-        <p>Bem-vindo, {user?.name || 'Usuario'}!</p>
+        <p>Bem-vindo, {user?.name || 'Usuário'}!</p>
       </div>
 
       <div className="stats-grid">
@@ -149,7 +185,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="chart-card">
-          <h3>Classificacao de risco</h3>
+          <h3>Classificação de risco</h3>
           <div className="chart-container">
             <Doughnut data={doughnutData} options={doughnutOptions} />
           </div>
@@ -158,7 +194,7 @@ export default function Dashboard() {
 
       <div className="charts-row">
         <div className="chart-card full">
-          <h3>Analises ao longo do tempo</h3>
+          <h3>Análises ao longo do tempo</h3>
           <div className="chart-container">
             <Line data={lineData} options={chartOptions} />
           </div>
@@ -166,25 +202,25 @@ export default function Dashboard() {
       </div>
 
       <div className="recent-section">
-        <h3>Analises recentes</h3>
-        {analysisHistory.length === 0 ? (
+        <h3>Análises recentes</h3>
+        {dashData.recentAnalyses.length === 0 ? (
           <div className="empty-state">
             <Search size={40} />
-            <p>Nenhuma analise realizada ainda. Acesse a pagina de analise para comecar!</p>
+            <p>Nenhuma análise realizada ainda. Acesse a página de análise para começar!</p>
           </div>
         ) : (
           <div className="recent-list">
-            {analysisHistory.slice(0, 5).map(item => (
+            {dashData.recentAnalyses.map(item => (
               <div key={item.id} className="recent-item">
-                <div className={`risk-badge ${item.risk}`}>
-                  {item.risk === 'safe' ? 'Confiavel' : item.risk === 'warning' ? 'Suspeito' : 'Alto Risco'}
+                <div className={`risk-badge ${resultClass[item.result]}`}>
+                  {resultLabel[item.result]}
                 </div>
                 <div className="recent-info">
                   <span className="recent-type">{item.type}</span>
                   <span className="recent-content">{item.content.substring(0, 80)}...</span>
                 </div>
                 <span className="recent-date">
-                  {new Date(item.date).toLocaleDateString('pt-BR')}
+                  {new Date(item.createdAt).toLocaleDateString('pt-BR')}
                 </span>
               </div>
             ))}
