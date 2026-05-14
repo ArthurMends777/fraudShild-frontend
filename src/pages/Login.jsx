@@ -1,54 +1,61 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { ShieldCheck, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import Chatbot from '../components/Chatbot'
+import { authService } from '../services/authService'
 import './Auth.css'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotSent, setForgotSent] = useState(false)
-  const [showReset, setShowReset] = useState(false)
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [resetDone, setResetDone] = useState(false)
+  const [forgotError, setForgotError] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
+
   const { login } = useApp()
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (email && password) {
-      const name = email.split('@')[0]
-      login(name, email)
+    setError('')
+    setLoading(true)
+    try {
+      const data = await authService.login({ email, password })
+      login(data.user, data.token)
       navigate('/app/dashboard')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao fazer login. Tente novamente.')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleForgotSubmit = (e) => {
+  const handleForgotSubmit = async (e) => {
     e.preventDefault()
-    if (forgotEmail) {
+    setForgotError('')
+    setForgotLoading(true)
+    try {
+      await authService.forgotPassword(forgotEmail)
       setForgotSent(true)
-      setTimeout(() => {
-        setForgotSent(false)
-        setShowForgot(false)
-        setShowReset(true)
-      }, 2000)
+    } catch (err) {
+      setForgotError(err.response?.data?.error || 'Erro ao enviar e-mail.')
+    } finally {
+      setForgotLoading(false)
     }
   }
 
-  const handleResetSubmit = (e) => {
-    e.preventDefault()
-    if (newPassword && newPassword === confirmPassword) {
-      setResetDone(true)
-      setTimeout(() => {
-        setShowReset(false)
-        setResetDone(false)
-      }, 2000)
-    }
+  const closeForgot = () => {
+    setShowForgot(false)
+    setForgotSent(false)
+    setForgotEmail('')
+    setForgotError('')
   }
 
   return (
@@ -87,27 +94,30 @@ export default function Login() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+
+          {error && <p className="error-msg">{error}</p>}
+
           <button type="button" className="forgot-link" onClick={() => setShowForgot(true)}>
             Esqueceu a senha?
           </button>
-          <button type="submit" className="btn-submit">
-            Entrar
+          <button type="submit" className="btn-submit" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
         <p className="auth-switch">
-          Nao tem conta? <Link to="/register">Criar conta</Link>
+          Não tem conta? <Link to="/register">Criar conta</Link>
         </p>
       </div>
 
       {showForgot && (
-        <div className="modal-overlay" onClick={() => setShowForgot(false)}>
+        <div className="modal-overlay" onClick={closeForgot}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2>Esqueceu a senha?</h2>
-            <p>Digite seu e-mail para receber o link de recuperacao</p>
+            <p>Digite seu e-mail para receber o link de recuperação</p>
             {forgotSent ? (
               <div className="success-msg">
-                E-mail enviado com sucesso! Verifique sua caixa de entrada.
+                E-mail enviado! Verifique sua caixa de entrada.
               </div>
             ) : (
               <form onSubmit={handleForgotSubmit}>
@@ -121,45 +131,10 @@ export default function Login() {
                     required
                   />
                 </div>
-                <button type="submit" className="btn-submit">Enviar</button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showReset && (
-        <div className="modal-overlay" onClick={() => setShowReset(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2>Redefinir senha</h2>
-            <p>Digite sua nova senha</p>
-            {resetDone ? (
-              <div className="success-msg">
-                Senha redefinida com sucesso!
-              </div>
-            ) : (
-              <form onSubmit={handleResetSubmit}>
-                <div className="input-group">
-                  <Lock size={18} className="input-icon" />
-                  <input
-                    type="password"
-                    placeholder="Nova senha"
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="input-group">
-                  <Lock size={18} className="input-icon" />
-                  <input
-                    type="password"
-                    placeholder="Confirmar nova senha"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <button type="submit" className="btn-submit">Redefinir</button>
+                {forgotError && <p className="error-msg">{forgotError}</p>}
+                <button type="submit" className="btn-submit" disabled={forgotLoading}>
+                  {forgotLoading ? 'Enviando...' : 'Enviar'}
+                </button>
               </form>
             )}
           </div>

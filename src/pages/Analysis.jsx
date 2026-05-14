@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { Search, Link2, Image, FileText, Upload, ShieldCheck, AlertTriangle, XCircle, Loader } from 'lucide-react'
 import './Analysis.css'
 

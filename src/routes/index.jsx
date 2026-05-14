@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import Landing from '../pages/Landing'
 import Login from '../pages/Login'
 import Register from '../pages/Register'

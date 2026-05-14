@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { ShieldCheck, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
 import Chatbot from '../components/Chatbot'
+import { authService } from '../services/authService'
 import './Auth.css'
 
 export default function Register() {
@@ -11,14 +12,32 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
   const { login } = useApp()
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (name && email && password && password === confirmPassword) {
-      login(name, email)
+    setError('')
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await authService.register({ name, email, password })
+      // Após registrar, faz login automático
+      const data = await authService.login({ email, password })
+      login(data.user, data.token)
       navigate('/app/dashboard')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erro ao criar conta. Tente novamente.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -78,13 +97,16 @@ export default function Register() {
               required
             />
           </div>
-          <button type="submit" className="btn-submit">
-            Criar conta
+
+          {error && <p className="error-msg">{error}</p>}
+
+          <button type="submit" className="btn-submit" disabled={loading}>
+            {loading ? 'Criando conta...' : 'Criar conta'}
           </button>
         </form>
 
         <p className="auth-switch">
-          Ja tem conta? <Link to="/login">Entrar</Link>
+          Já tem conta? <Link to="/login">Entrar</Link>
         </p>
       </div>
 

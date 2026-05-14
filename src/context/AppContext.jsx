@@ -1,11 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useState, useEffect } from 'react'
+import { api } from '../services/api'
 
-const AppContext = createContext()
+export const AppContext = createContext()
 
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('fraudshield_user')
     return saved ? JSON.parse(saved) : null
+  })
+
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem('fraudshield_token') || null
   })
 
   const [darkMode, setDarkMode] = useState(() => {
@@ -17,6 +22,16 @@ export function AppProvider({ children }) {
     const saved = localStorage.getItem('fraudshield_history')
     return saved ? JSON.parse(saved) : []
   })
+
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      localStorage.setItem('fraudshield_token', token)
+    } else {
+      delete api.defaults.headers.common['Authorization']
+      localStorage.removeItem('fraudshield_token')
+    }
+  }, [token])
 
   useEffect(() => {
     if (darkMode) {
@@ -39,12 +54,14 @@ export function AppProvider({ children }) {
     localStorage.setItem('fraudshield_history', JSON.stringify(analysisHistory))
   }, [analysisHistory])
 
-  const login = (name, email) => {
-    setUser({ name, email })
+  const login = (userData, authToken) => {
+    setUser(userData)
+    setToken(authToken)
   }
 
   const logout = () => {
     setUser(null)
+    setToken(null)
   }
 
   const updateUserName = (newName) => {
@@ -72,6 +89,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       user,
+      token,
       login,
       logout,
       updateUserName,
@@ -84,13 +102,4 @@ export function AppProvider({ children }) {
       {children}
     </AppContext.Provider>
   )
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useApp() {
-  const context = useContext(AppContext)
-  if (!context) {
-    throw new Error('useApp must be used within AppProvider')
-  }
-  return context
 }

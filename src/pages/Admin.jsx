@@ -1,5 +1,5 @@
 import { Bar, Doughnut } from 'react-chartjs-2'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { Users, Search, TrendingUp, AlertTriangle, Activity } from 'lucide-react'
 import './Admin.css'
 

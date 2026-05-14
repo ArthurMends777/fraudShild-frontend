@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { User, Mail, Lock, Bell, Palette, Save, Eye, EyeOff } from 'lucide-react'
 import './Settings.css'
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { History as HistoryIcon, Search, Trash2, FileText, Link2, Image, Filter } from 'lucide-react'
 import './History.css'
 

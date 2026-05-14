@@ -1,4 +1,4 @@
-import { useApp } from '../context/AppContext'
+import { useApp } from '../context/useApp'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
