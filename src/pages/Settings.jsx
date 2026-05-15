@@ -1,58 +1,134 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/useApp'
 import { User, Mail, Lock, Bell, Palette, Save, Eye, EyeOff } from 'lucide-react'
+import { settingsService } from '../services/settingsService'
 import './Settings.css'
 
 export default function Settings() {
-  const { user, updateUserName, darkMode, toggleDarkMode } = useApp()
-  const [name, setName] = useState(user?.name || '')
-  const [email, setEmail] = useState(user?.email || '')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [notifications, setNotifications] = useState({
-    email: true,
-    analysis: true,
-    security: true,
-    newsletter: false,
-  })
-  const [saved, setSaved] = useState(false)
+  const { user, darkMode, toggleDarkMode, login, token } = useApp()
 
-  const handleSaveProfile = (e) => {
+  // Perfil
+  const [name, setName]   = useState(user?.name || '')
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileMsg, setProfileMsg]         = useState({ text: '', error: false })
+
+  // Senha
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword]         = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword]       = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordMsg, setPasswordMsg]         = useState({ text: '', error: false })
+
+  // Notificações — inicializa do perfil do backend
+  const [notifications, setNotifications] = useState({
+    email:      user?.notifEmail      ?? true,
+    analysis:   user?.notifAnalysis   ?? true,
+    security:   user?.notifSecurity   ?? true,
+    newsletter: user?.notifNewsletter ?? false,
+  })
+  const [notifLoading, setNotifLoading] = useState(false)
+
+  // Carrega perfil completo do backend (tem os campos de notif)
+  useEffect(() => {
+    settingsService.getProfile().then(profile => {
+      setName(profile.name)
+      setNotifications({
+        email:      profile.notifEmail,
+        analysis:   profile.notifAnalysis,
+        security:   profile.notifSecurity,
+        newsletter: profile.notifNewsletter,
+      })
+    })
+  }, [])
+
+  const showMsg = (setter, text, error = false) => {
+    setter({ text, error })
+    setTimeout(() => setter({ text: '', error: false }), 3000)
+  }
+
+  // Salvar perfil
+  const handleSaveProfile = async (e) => {
     e.preventDefault()
-    if (name.trim()) {
-      updateUserName(name.trim())
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+    if (!name.trim()) return
+    setProfileLoading(true)
+    try {
+      const updated = await settingsService.updateProfile({ name: name.trim() })
+      // Atualiza o user no contexto mantendo o token
+      login({ ...user, name: updated.name }, token)
+      showMsg(setProfileMsg, 'Perfil salvo com sucesso!')
+    } catch (err) {
+      showMsg(setProfileMsg, err.response?.data?.error || 'Erro ao salvar perfil.', true)
+    } finally {
+      setProfileLoading(false)
     }
   }
 
-  const handleSavePassword = (e) => {
+  // Alterar senha
+  const handleSavePassword = async (e) => {
     e.preventDefault()
-    if (newPassword && newPassword === confirmPassword) {
-      setSaved(true)
+    if (newPassword !== confirmPassword) {
+      showMsg(setPasswordMsg, 'As senhas não coincidem.', true)
+      return
+    }
+    if (newPassword.length < 8) {
+      showMsg(setPasswordMsg, 'A nova senha deve ter no mínimo 8 caracteres.', true)
+      return
+    }
+    setPasswordLoading(true)
+    try {
+      await settingsService.changePassword({ currentPassword, newPassword })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setTimeout(() => setSaved(false), 3000)
+      showMsg(setPasswordMsg, 'Senha alterada com sucesso!')
+    } catch (err) {
+      showMsg(setPasswordMsg, err.response?.data?.error || 'Erro ao alterar senha.', true)
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
+  // Atualizar notificação individual
+  const handleNotifChange = async (key, value) => {
+    const updated = { ...notifications, [key]: value }
+    setNotifications(updated)
+    setNotifLoading(true)
+    try {
+      await settingsService.updatePreferences({
+        notifEmail:      updated.email,
+        notifAnalysis:   updated.analysis,
+        notifSecurity:   updated.security,
+        notifNewsletter: updated.newsletter,
+      })
+    } catch {
+      // Reverte em caso de erro
+      setNotifications(notifications)
+    } finally {
+      setNotifLoading(false)
+    }
+  }
+
+  // Alternar tema e sincronizar com backend
+  const handleThemeToggle = async () => {
+    toggleDarkMode()
+    try {
+      await settingsService.updatePreferences({ theme: darkMode ? 'light' : 'dark' })
+    } catch {
+      // falha silenciosa — o toggle local já aconteceu
     }
   }
 
   return (
     <div className="settings-page">
       <div className="page-header">
-        <h1>Configuracoes</h1>
-        <p>Gerencie sua conta e preferencias</p>
+        <h1>Configurações</h1>
+        <p>Gerencie sua conta e preferências</p>
       </div>
 
-      {saved && (
-        <div className="saved-notification">
-          Alteracoes salvas com sucesso!
-        </div>
-      )}
-
       <div className="settings-grid">
+
+        {/* Perfil */}
         <div className="settings-card">
           <div className="settings-card-header">
             <User size={20} />
@@ -75,27 +151,25 @@ export default function Settings() {
               <label>E-mail</label>
               <div className="input-group">
                 <Mail size={16} className="input-icon" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="Seu e-mail"
-                  disabled
-                />
+                <input type="email" value={user?.email || ''} disabled />
               </div>
-              <span className="field-hint">O e-mail nao pode ser alterado</span>
+              <span className="field-hint">O e-mail não pode ser alterado</span>
             </div>
-            <button type="submit" className="btn-save">
+            {profileMsg.text && (
+              <p className={profileMsg.error ? 'error-msg' : 'success-msg'}>{profileMsg.text}</p>
+            )}
+            <button type="submit" className="btn-save" disabled={profileLoading}>
               <Save size={16} />
-              Salvar perfil
+              {profileLoading ? 'Salvando...' : 'Salvar perfil'}
             </button>
           </form>
         </div>
 
+        {/* Segurança */}
         <div className="settings-card">
           <div className="settings-card-header">
             <Lock size={20} />
-            <h3>Seguranca</h3>
+            <h3>Segurança</h3>
           </div>
           <form onSubmit={handleSavePassword}>
             <div className="settings-field">
@@ -121,7 +195,7 @@ export default function Settings() {
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Nova senha"
+                  placeholder="Mínimo 8 caracteres"
                 />
               </div>
             </div>
@@ -137,82 +211,52 @@ export default function Settings() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-save">
+            {passwordMsg.text && (
+              <p className={passwordMsg.error ? 'error-msg' : 'success-msg'}>{passwordMsg.text}</p>
+            )}
+            <button type="submit" className="btn-save" disabled={passwordLoading}>
               <Save size={16} />
-              Alterar senha
+              {passwordLoading ? 'Salvando...' : 'Alterar senha'}
             </button>
           </form>
         </div>
 
+        {/* Notificações */}
         <div className="settings-card">
           <div className="settings-card-header">
             <Bell size={20} />
-            <h3>Notificacoes</h3>
+            <h3>Notificações {notifLoading && <span className="saving-indicator">salvando...</span>}</h3>
           </div>
           <div className="toggle-list">
-            <div className="toggle-item">
-              <div className="toggle-info">
-                <span className="toggle-label">Notificacoes por e-mail</span>
-                <span className="toggle-desc">Receba alertas sobre suas analises</span>
+            {[
+              { key: 'email',      label: 'Notificações por e-mail',  desc: 'Receba alertas sobre suas análises' },
+              { key: 'analysis',   label: 'Alertas de análise',        desc: 'Notificações de conteúdo de alto risco' },
+              { key: 'security',   label: 'Alertas de segurança',      desc: 'Avisos sobre novos golpes detectados' },
+              { key: 'newsletter', label: 'Newsletter',                 desc: 'Receba dicas semanais de segurança' },
+            ].map(({ key, label, desc }) => (
+              <div key={key} className="toggle-item">
+                <div className="toggle-info">
+                  <span className="toggle-label">{label}</span>
+                  <span className="toggle-desc">{desc}</span>
+                </div>
+                <label className="switch">
+                  <input
+                    type="checkbox"
+                    checked={notifications[key]}
+                    onChange={e => handleNotifChange(key, e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
               </div>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={notifications.email}
-                  onChange={e => setNotifications(prev => ({ ...prev, email: e.target.checked }))}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-            <div className="toggle-item">
-              <div className="toggle-info">
-                <span className="toggle-label">Alertas de analise</span>
-                <span className="toggle-desc">Notificacoes de conteudo de alto risco</span>
-              </div>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={notifications.analysis}
-                  onChange={e => setNotifications(prev => ({ ...prev, analysis: e.target.checked }))}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-            <div className="toggle-item">
-              <div className="toggle-info">
-                <span className="toggle-label">Alertas de seguranca</span>
-                <span className="toggle-desc">Avisos sobre novos golpes detectados</span>
-              </div>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={notifications.security}
-                  onChange={e => setNotifications(prev => ({ ...prev, security: e.target.checked }))}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
-            <div className="toggle-item">
-              <div className="toggle-info">
-                <span className="toggle-label">Newsletter</span>
-                <span className="toggle-desc">Receba dicas semanais de seguranca</span>
-              </div>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={notifications.newsletter}
-                  onChange={e => setNotifications(prev => ({ ...prev, newsletter: e.target.checked }))}
-                />
-                <span className="slider"></span>
-              </label>
-            </div>
+            ))}
           </div>
         </div>
 
+        {/* Aparência */}
         <div className="settings-card">
           <div className="settings-card-header">
             <Palette size={20} />
-            <h3>Aparencia</h3>
+            <h3>Aparência</h3>
           </div>
           <div className="toggle-list">
             <div className="toggle-item">
@@ -221,11 +265,7 @@ export default function Settings() {
                 <span className="toggle-desc">Alterne entre tema claro e escuro</span>
               </div>
               <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={darkMode}
-                  onChange={toggleDarkMode}
-                />
+                <input type="checkbox" checked={darkMode} onChange={handleThemeToggle} />
                 <span className="slider"></span>
               </label>
             </div>
@@ -244,7 +284,7 @@ export default function Settings() {
             <div className="color-swatches">
               <div className="swatch-labeled">
                 <div className="swatch" style={{ background: '#22C55E' }}></div>
-                <span>Confiavel</span>
+                <span>Confiável</span>
               </div>
               <div className="swatch-labeled">
                 <div className="swatch" style={{ background: '#F59E0B' }}></div>
@@ -252,7 +292,7 @@ export default function Settings() {
               </div>
               <div className="swatch-labeled">
                 <div className="swatch" style={{ background: '#EF4444' }}></div>
-                <span>Cuidado</span>
+                <span>Alto Risco</span>
               </div>
             </div>
           </div>
