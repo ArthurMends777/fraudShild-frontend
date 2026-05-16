@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, MoreVertical, UserPlus, Shield, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, MoreVertical, Shield, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { adminService } from '../services/adminService'
+import { UserAvatar } from '../components/Sidebar'
 import './UsersPage.css'
 
 const ROLES = ['user', 'admin', 'moderador']
@@ -13,7 +14,7 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [page, setPage]             = useState(1)
-  const [openMenu, setOpenMenu]     = useState(null) // userId com menu aberto
+  const [openMenu, setOpenMenu]     = useState(null)
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -85,11 +86,7 @@ export default function UsersPage() {
           <option value="user">Usuário</option>
           <option value="moderador">Moderador</option>
           <option value="admin">Admin</option>
-        </select>          
-        <button className="btn-add-user">
-          <UserPlus size={16} />
-          Novo usuario
-        </button>
+        </select>
       </div>
 
       {loading ? (
@@ -114,7 +111,7 @@ export default function UsersPage() {
                   <tr key={user.id}>
                     <td>
                       <div className="user-cell">
-                        <div className="user-cell-avatar">{user.name.charAt(0)}</div>
+                        <UserAvatar user={user} size={34} className="user-cell-avatar" />
                         <div className="user-cell-info">
                           <span className="user-cell-name">{user.name}</span>
                           <span className="user-cell-email">{user.email}</span>

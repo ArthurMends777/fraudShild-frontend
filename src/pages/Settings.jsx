@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useApp } from '../context/useApp'
-import { User, Mail, Lock, Bell, Palette, Save, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Lock, Bell, Palette, Save, Eye, EyeOff, Camera } from 'lucide-react'
 import { settingsService } from '../services/settingsService'
+import { BASE_URL } from '../services/api'
 import './Settings.css'
 
 export default function Settings() {
   const { user, darkMode, toggleDarkMode, login, token } = useApp()
 
   // Perfil
-  const [name, setName]   = useState(user?.name || '')
+  const [name, setName]                 = useState(user?.name || '')
+  const [profileImage, setProfileImage] = useState(user?.profileImage || null)
+  const [avatarLoading, setAvatarLoading]   = useState(false)
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileMsg, setProfileMsg]         = useState({ text: '', error: false })
+  const fileInputRef                        = useRef(null)
 
   // Senha
   const [currentPassword, setCurrentPassword] = useState('')
@@ -20,7 +24,7 @@ export default function Settings() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordMsg, setPasswordMsg]         = useState({ text: '', error: false })
 
-  // Notificações — inicializa do perfil do backend
+  // Notificações
   const [notifications, setNotifications] = useState({
     email:      user?.notifEmail      ?? true,
     analysis:   user?.notifAnalysis   ?? true,
@@ -29,10 +33,10 @@ export default function Settings() {
   })
   const [notifLoading, setNotifLoading] = useState(false)
 
-  // Carrega perfil completo do backend (tem os campos de notif)
   useEffect(() => {
     settingsService.getProfile().then(profile => {
       setName(profile.name)
+      setProfileImage(profile.profileImage || null)
       setNotifications({
         email:      profile.notifEmail,
         analysis:   profile.notifAnalysis,
@@ -47,6 +51,30 @@ export default function Settings() {
     setTimeout(() => setter({ text: '', error: false }), 3000)
   }
 
+  // Upload de avatar
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Preview local imediato enquanto faz upload
+    const localUrl = URL.createObjectURL(file)
+    setProfileImage(localUrl)
+    setAvatarLoading(true)
+
+    try {
+      const { profileImage: savedUrl } = await settingsService.uploadAvatar(file)
+      setProfileImage(savedUrl)
+      login({ ...user, profileImage: savedUrl }, token)
+      showMsg(setProfileMsg, 'Foto atualizada com sucesso!')
+    } catch (err) {
+      setProfileImage(user?.profileImage || null) // reverte preview
+      showMsg(setProfileMsg, err.response?.data?.error || 'Erro ao enviar foto.', true)
+    } finally {
+      setAvatarLoading(false)
+      e.target.value = '' // reseta o input para permitir selecionar a mesma foto novamente
+    }
+  }
+
   // Salvar perfil
   const handleSaveProfile = async (e) => {
     e.preventDefault()
@@ -54,7 +82,6 @@ export default function Settings() {
     setProfileLoading(true)
     try {
       const updated = await settingsService.updateProfile({ name: name.trim() })
-      // Atualiza o user no contexto mantendo o token
       login({ ...user, name: updated.name }, token)
       showMsg(setProfileMsg, 'Perfil salvo com sucesso!')
     } catch (err) {
@@ -89,7 +116,7 @@ export default function Settings() {
     }
   }
 
-  // Atualizar notificação individual
+  // Notificações
   const handleNotifChange = async (key, value) => {
     const updated = { ...notifications, [key]: value }
     setNotifications(updated)
@@ -102,22 +129,26 @@ export default function Settings() {
         notifNewsletter: updated.newsletter,
       })
     } catch {
-      // Reverte em caso de erro
       setNotifications(notifications)
     } finally {
       setNotifLoading(false)
     }
   }
 
-  // Alternar tema e sincronizar com backend
+  // Tema
   const handleThemeToggle = async () => {
     toggleDarkMode()
     try {
       await settingsService.updatePreferences({ theme: darkMode ? 'light' : 'dark' })
-    } catch {
-      // falha silenciosa — o toggle local já aconteceu
-    }
+    } catch {}
   }
+
+  // Resolve URL da foto — pode ser blob (preview local) ou path do servidor
+  const avatarSrc = profileImage
+    ? profileImage.startsWith('blob:') || profileImage.startsWith('http')
+      ? profileImage
+      : `${BASE_URL}${profileImage}`
+    : null
 
   return (
     <div className="settings-page">
@@ -135,6 +166,51 @@ export default function Settings() {
             <h3>Perfil</h3>
           </div>
           <form onSubmit={handleSaveProfile}>
+
+            {/* Avatar */}
+            <div className="avatar-upload">
+              <div className="avatar-preview">
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt="Foto de perfil"
+                    className="avatar-img"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                  />
+                ) : null}
+                <div className="avatar-placeholder" style={{ display: avatarSrc ? 'none' : 'flex' }}>
+                  {user?.name?.charAt(0).toUpperCase() || <User size={32} />}
+                </div>
+                <button
+                  type="button"
+                  className={`avatar-camera-btn ${avatarLoading ? 'loading' : ''}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarLoading}
+                  title="Alterar foto"
+                >
+                  {avatarLoading ? '...' : <Camera size={14} />}
+                </button>
+              </div>
+              <div className="avatar-info">
+                <button
+                  type="button"
+                  className="avatar-change-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarLoading}
+                >
+                  {avatarLoading ? 'Enviando...' : 'Alterar foto'}
+                </button>
+                <p className="avatar-hint">JPG, PNG ou WEBP · máx. 2MB</p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
+              />
+            </div>
+
             <div className="settings-field">
               <label>Nome</label>
               <div className="input-group">
@@ -155,6 +231,7 @@ export default function Settings() {
               </div>
               <span className="field-hint">O e-mail não pode ser alterado</span>
             </div>
+
             {profileMsg.text && (
               <p className={profileMsg.error ? 'error-msg' : 'success-msg'}>{profileMsg.text}</p>
             )}
@@ -270,7 +347,6 @@ export default function Settings() {
               </label>
             </div>
           </div>
-
           <div className="theme-preview">
             <h4>Cores do sistema</h4>
             <div className="color-swatches">

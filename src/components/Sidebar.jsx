@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/useApp'
+import { BASE_URL } from '../services/api'
 import {
   LayoutDashboard,
   Search,
@@ -27,6 +28,33 @@ const navItems = [
   { path: '/app/configuracoes', icon: Settings,        label: 'Configuracoes',adminOnly: false },
 ]
 
+function UserAvatar({ user, size = 36, className = 'user-avatar' }) {
+  const avatarSrc = user?.profileImage
+    ? user.profileImage.startsWith('http')
+      ? user.profileImage
+      : `${BASE_URL}${user.profileImage}`
+    : null
+
+  if (avatarSrc) {
+    return (
+      <img
+        src={avatarSrc}
+        alt={user.name}
+        className={`${className} ${className}-img`}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
+        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+      />
+    )
+  }
+  return (
+    <div className={className} style={{ width: size, height: size }}>
+      {user?.name?.charAt(0).toUpperCase()}
+    </div>
+  )
+}
+
+export { UserAvatar }
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { user, logout, darkMode, toggleDarkMode } = useApp()
@@ -51,14 +79,16 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {!collapsed && user && (
-        <div className="sidebar-user">
-          <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
-          <div className="user-info">
-            <span className="user-name">{user.name}</span>
-            <span className="user-email">{user.email}</span>
-            {isAdmin && <span className="user-role-badge">Admin</span>}
-          </div>
+      {user && (
+        <div className={`sidebar-user ${collapsed ? 'collapsed' : ''}`}>
+          <UserAvatar user={user} size={36} />
+          {!collapsed && (
+            <div className="user-info">
+              <span className="user-name">{user.name}</span>
+              <span className="user-email">{user.email}</span>
+              {isAdmin && <span className="user-role-badge">Admin</span>}
+            </div>
+          )}
         </div>
       )}
 
