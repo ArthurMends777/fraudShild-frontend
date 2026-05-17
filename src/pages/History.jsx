@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { History as HistoryIcon, Search, Trash2, FileText, Link2, Image, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
+import { History as HistoryIcon, Search, Trash2, FileText, AlertTriangle, Filter, ChevronLeft, ChevronRight } from 'lucide-react'
 import { historyService } from '../services/historyService'
 import './History.css'
 
@@ -7,11 +7,10 @@ const resultLabel = { TRUE: 'Confiável', SUSPECT: 'Suspeito', FALSE: 'Alto Risc
 const resultClass  = { TRUE: 'safe', SUSPECT: 'warning', FALSE: 'danger' }
 
 const getTypeIcon = (type) => {
-  switch (type?.toLowerCase()) {
-    case 'text':  return <FileText size={16} />
-    case 'url':   return <Link2 size={16} />
-    case 'image': return <Image size={16} />
-    default:      return <FileText size={16} />
+  switch (type) {
+    case 'FAKE_NEWS': return <FileText size={16} />
+    case 'SCAM':      return <AlertTriangle size={16} />
+    default:          return <FileText size={16} />
   }
 }
 
@@ -90,9 +89,8 @@ export default function History() {
           <Filter size={16} />
           <select value={filterType} onChange={e => setFilterType(e.target.value)}>
             <option value="all">Todos os tipos</option>
-            <option value="TEXT">Texto</option>
-            <option value="URL">Link</option>
-            <option value="IMAGE">Imagem</option>
+            <option value="FAKE_NEWS">Fake News</option>
+            <option value="SCAM">Golpe</option>
           </select>
           <select value={filterRisk} onChange={e => setFilterRisk(e.target.value)}>
             <option value="all">Todos os riscos</option>
@@ -170,7 +168,7 @@ export default function History() {
                 </div>
                 <div className="history-item-score">
                   <span className="score-number">{Math.round((item.confidence ?? 0) * 100)}%</span>
-                  <span className="score-text">Confiança</span>
+                  <span className="score-text">Risco</span>
                 </div>
               </div>
             ))}

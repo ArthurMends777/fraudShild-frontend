@@ -1,119 +1,129 @@
 import { useState } from 'react'
 import { useApp } from '../context/useApp'
-import { Search, Link2, Image, FileText, Upload, ShieldCheck, AlertTriangle, XCircle, Loader } from 'lucide-react'
+import { Search, Link2, Image, FileText, Upload, ShieldCheck, AlertTriangle, XCircle, Loader, RefreshCw, CheckCircle, AlertOctagon } from 'lucide-react'
+import { api } from '../services/api'
+import Tesseract from 'tesseract.js'
 import './Analysis.css'
 
-const suspiciousPatterns = [
-  'urgente', 'ganhe', 'premio', 'gratis', 'clique aqui', 'deposite',
-  'transfira', 'pix', 'senha', 'dados pessoais', 'cartao', 'credito',
-  'verificar conta', 'suspensa', 'bloqueada', 'atualizar cadastro',
-  'oferta imperdivel', 'tempo limitado', 'aja agora', 'nao perca',
-  'confirmacao', 'voce ganhou', 'selecionado', 'sorteado', 'parabens',
-  'link', 'http', 'www', 'bit.ly', 'encurtador'
-]
-
-const fakeNewsPatterns = [
-  'compartilhe', 'viralizar', 'midia esconde', 'ninguem fala',
-  'verdade que', 'descobriram', 'chocante', 'absurdo', 'inacreditavel',
-  'governo esconde', 'conspiracao', 'proibido', 'censurado',
-  'urgente repassem', 'antes que apaguem', 'fato comprovado'
-]
-
-function analyzeContent(content, type) {
-  const lower = content.toLowerCase()
-  let score = 0
-  const found = []
-
-  suspiciousPatterns.forEach(p => {
-    if (lower.includes(p)) {
-      score += 10
-      found.push(p)
-    }
-  })
-
-  fakeNewsPatterns.forEach(p => {
-    if (lower.includes(p)) {
-      score += 15
-      found.push(p)
-    }
-  })
-
-  if (type === 'link') {
-    if (lower.includes('bit.ly') || lower.includes('tinyurl') || lower.includes('encurtador')) score += 20
-    if (!lower.includes('https://')) score += 10
-    if (lower.match(/\d{4,}/)) score += 10
+const mapNivel = (nivel) => {
+  switch (nivel) {
+    case 'confiavel':  return { risk: 'safe',    color: '#22C55E', result: 'TRUE'    }
+    case 'suspeito':   return { risk: 'warning',  color: '#F59E0B', result: 'SUSPECT' }
+    case 'alto_risco': return { risk: 'danger',   color: '#EF4444', result: 'FALSE'   }
+    default:           return { risk: 'warning',  color: '#F59E0B', result: 'SUSPECT' }
   }
-
-  if (content.length < 20) score = Math.min(score, 20)
-  score = Math.min(score, 100)
-
-  let risk, label, color, explanation
-  if (score <= 25) {
-    risk = 'safe'
-    label = 'Conteudo confiavel'
-    color = '#22C55E'
-    explanation = 'O conteudo analisado nao apresenta indicadores significativos de golpe ou desinformacao. Ainda assim, mantenha-se atento.'
-  } else if (score <= 60) {
-    risk = 'warning'
-    label = 'Possivelmente suspeito'
-    color = '#F59E0B'
-    explanation = 'O conteudo apresenta alguns indicadores de possivel golpe ou fake news. Recomendamos verificar em fontes confiaveis antes de agir.'
-  } else {
-    risk = 'danger'
-    label = 'Alto risco de golpe ou fake news'
-    color = '#EF4444'
-    explanation = 'O conteudo apresenta fortes indicadores de golpe ou desinformacao. Nao clique em links, nao forneca dados pessoais e denuncie.'
-  }
-
-  return { risk, label, color, score, found, explanation }
 }
 
+const tabType = { text: 'TEXT', link: 'URL', image: 'IMAGE' }
+
 export default function Analysis() {
-  const [activeTab, setActiveTab] = useState('text')
-  const [content, setContent] = useState('')
-  const [imageFile, setImageFile] = useState(null)
+  const [activeTab, setActiveTab]       = useState('text')
+  const [content, setContent]           = useState('')
+  const [imageFile, setImageFile]       = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
-  const [result, setResult] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
+  const [result, setResult]             = useState(null)
+  const [analyzing, setAnalyzing]       = useState(false)
+  const [ocrProgress, setOcrProgress]   = useState(0)
+  const [error, setError]               = useState('')
+  const [lastTexto, setLastTexto]       = useState('')
+  const [lastType, setLastType]         = useState('text')
+  const [explicar, setExplicar]         = useState(true)
   const { addAnalysis } = useApp()
 
   const tabs = [
-    { id: 'text', icon: FileText, label: 'Texto / Noticia' },
-    { id: 'link', icon: Link2, label: 'Link' },
-    { id: 'image', icon: Image, label: 'Imagem' },
+    { id: 'text',  icon: FileText, label: 'Texto / Notícia' },
+    { id: 'link',  icon: Link2,    label: 'Link' },
+    { id: 'image', icon: Image,    label: 'Imagem' },
   ]
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setImagePreview(reader.result)
-      reader.readAsDataURL(file)
+    if (!file) return
+    setImageFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => setImagePreview(reader.result)
+    reader.readAsDataURL(file)
+    setResult(null)
+    setError('')
+  }
+
+  const extractTextFromImage = async (file) => {
+    const { data: { text } } = await Tesseract.recognize(file, 'por+eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') setOcrProgress(Math.round(m.progress * 100))
+      }
+    })
+    return text.trim()
+  }
+
+  const runAnalysis = async (texto, type) => {
+    setError('')
+    setResult(null)
+    setAnalyzing(true)
+    try {
+      const { data } = await api.post('/analisar', {
+        texto,
+        explicar,
+        type: tabType[type],
+        sourceUrl: type === 'link' ? texto : undefined,
+      })
+      const { risk, color, result: analResult } = mapNivel(data.classificacao.nivel)
+      const mapped = {
+        risk,
+        color,
+        label:      data.classificacao.label,
+        emoji:      data.classificacao.emoji,
+        observacao: data.classificacao.observacao,
+        score:      Math.round(data.probabilidade_fake * 100),
+        alertas:    data.alertas,
+        palavras:   data.palavras_chave,
+        evidencias: data.evidencias,
+        textoOcr:   type === 'image' ? texto : null,
+      }
+      setResult(mapped)
+      addAnalysis({
+        type:    tabType[type],
+        content: type === 'image' ? `[Imagem] ${texto.substring(0, 200)}` : texto,
+        risk:    analResult,
+        score:   mapped.score,
+      })
+    } catch (err) {
+      setError(err.response?.data?.erro || 'Serviço de análise indisponível. Verifique se o servidor ML está rodando.')
+    } finally {
+      setAnalyzing(false)
+      setOcrProgress(0)
     }
   }
 
-  const handleAnalyze = () => {
-    const contentToAnalyze = activeTab === 'image' ? (imageFile?.name || 'imagem_analisada') : content
-    if (!contentToAnalyze.trim() && activeTab !== 'image') return
-    if (activeTab === 'image' && !imageFile) return
-
-    setAnalyzing(true)
-    setTimeout(() => {
-      const analysisResult = analyzeContent(
-        activeTab === 'image' ? 'imagem suspeita compartilhe urgente' : content,
-        activeTab
-      )
-
-      setResult(analysisResult)
-      addAnalysis({
-        type: activeTab === 'text' ? 'Texto' : activeTab === 'link' ? 'Link' : 'Imagem',
-        content: contentToAnalyze,
-        risk: analysisResult.risk,
-        score: analysisResult.score
-      })
+  const handleAnalyze = async () => {
+    let texto = content.trim()
+    if (activeTab === 'image') {
+      if (!imageFile) return
+      setAnalyzing(true)
+      setOcrProgress(0)
+      try {
+        texto = await extractTextFromImage(imageFile)
+        if (!texto) {
+          setError('Não foi possível extrair texto da imagem. Tente uma imagem com texto mais legível.')
+          setAnalyzing(false)
+          return
+        }
+      } catch {
+        setError('Erro ao processar imagem.')
+        setAnalyzing(false)
+        return
+      }
       setAnalyzing(false)
-    }, 2000)
+    } else {
+      if (!texto) return
+    }
+    setLastTexto(texto)
+    setLastType(activeTab)
+    await runAnalysis(texto, activeTab)
+  }
+
+  const handleReanalyze = () => {
+    if (lastTexto) runAnalysis(lastTexto, lastType)
   }
 
   const handleClear = () => {
@@ -121,12 +131,26 @@ export default function Analysis() {
     setImageFile(null)
     setImagePreview(null)
     setResult(null)
+    setError('')
+    setLastTexto('')
+  }
+
+  const getRiskIcon = (risk) => {
+    if (risk === 'safe')    return <ShieldCheck size={28} />
+    if (risk === 'warning') return <AlertTriangle size={28} />
+    return <XCircle size={28} />
+  }
+
+  const getScoreConfiabilidade = (score) => {
+    if (score >= 0.4)  return { label: 'Fontes confiáveis encontradas',      color: '#22C55E', icon: <CheckCircle size={14} /> }
+    if (score <= -0.3) return { label: 'Fontes suspeitas predominantes',       color: '#EF4444', icon: <AlertOctagon size={14} /> }
+    return               { label: 'Resultados mistos — verifique as fontes', color: '#F59E0B', icon: <AlertTriangle size={14} /> }
   }
 
   return (
     <div className="analysis-page">
       <div className="page-header">
-        <h1>Analise de conteudo</h1>
+        <h1>Análise de conteúdo</h1>
         <p>Cole um texto, link ou envie uma imagem para verificar</p>
       </div>
 
@@ -135,7 +159,7 @@ export default function Analysis() {
           <button
             key={tab.id}
             className={`analysis-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => { setActiveTab(tab.id); setResult(null); }}
+            onClick={() => { setActiveTab(tab.id); setResult(null); setError('') }}
           >
             <tab.icon size={18} />
             <span>{tab.label}</span>
@@ -149,7 +173,7 @@ export default function Analysis() {
             {imagePreview ? (
               <div className="image-preview">
                 <img src={imagePreview} alt="Preview" />
-                <button className="remove-image" onClick={() => { setImageFile(null); setImagePreview(null); }}>
+                <button className="remove-image" onClick={() => { setImageFile(null); setImagePreview(null); setResult(null) }}>
                   <XCircle size={20} />
                 </button>
               </div>
@@ -157,7 +181,7 @@ export default function Analysis() {
               <label className="upload-label">
                 <Upload size={40} />
                 <span>Clique ou arraste uma imagem</span>
-                <span className="upload-hint">PNG, JPG ou captura de tela</span>
+                <span className="upload-hint">PNG, JPG ou captura de tela — o texto será extraído automaticamente</span>
                 <input type="file" accept="image/*" onChange={handleImageChange} hidden />
               </label>
             )}
@@ -165,77 +189,188 @@ export default function Analysis() {
         ) : (
           <textarea
             className="analysis-textarea"
-            placeholder={activeTab === 'text' 
-              ? 'Cole aqui o texto, noticia ou mensagem que deseja analisar...'
+            placeholder={activeTab === 'text'
+              ? 'Cole aqui o texto, notícia ou mensagem que deseja analisar...'
               : 'Cole aqui o link que deseja verificar...'}
             value={content}
-            onChange={e => setContent(e.target.value)}
+            onChange={e => { setContent(e.target.value); setResult(null) }}
             rows={8}
           />
         )}
 
+        {error && <p className="error-msg" style={{ marginTop: 8 }}>{error}</p>}
+
+        {/* Toggle modo de análise */}
+        <div className="analysis-mode">
+          <span className="analysis-mode-label">Modo de análise:</span>
+          <div className="analysis-mode-options">
+            <button
+              type="button"
+              className={`mode-btn ${!explicar ? 'active' : ''}`}
+              onClick={() => setExplicar(false)}
+            >
+              <span className="mode-icon">⚡</span>
+              <div>
+                <span className="mode-title">Rápida</span>
+                <span className="mode-desc">Resultado em segundos, sem explicação detalhada</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className={`mode-btn ${explicar ? 'active' : ''}`}
+              onClick={() => setExplicar(true)}
+            >
+              <span className="mode-icon">🔬</span>
+              <div>
+                <span className="mode-title">Detalhada</span>
+                <span className="mode-desc">Palavras-chave explicadas pelo modelo (mais lento)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <div className="analysis-actions">
-          <button className="btn-analyze" onClick={handleAnalyze} disabled={analyzing}>
+          <button
+            className="btn-analyze"
+            onClick={handleAnalyze}
+            disabled={analyzing || (!content.trim() && activeTab !== 'image') || (activeTab === 'image' && !imageFile)}
+          >
             {analyzing ? (
               <>
                 <Loader size={18} className="spin" />
-                Analisando...
+                {activeTab === 'image' && ocrProgress < 100
+                  ? `Extraindo texto... ${ocrProgress}%`
+                  : 'Analisando...'}
               </>
             ) : (
               <>
                 <Search size={18} />
-                Analisar conteudo
+                Analisar conteúdo
               </>
             )}
           </button>
-          <button className="btn-clear" onClick={handleClear}>
-            Limpar
-          </button>
+          <button className="btn-clear" onClick={handleClear}>Limpar</button>
         </div>
       </div>
 
       {result && (
         <div className="analysis-result" style={{ borderColor: result.color }}>
+
+          {/* Banner de alto risco */}
+          {result.risk === 'danger' && (
+            <div className="danger-banner">
+              <AlertOctagon size={20} />
+              <span>Atenção! Este conteúdo apresenta alto risco de golpe ou desinformação. Não compartilhe, não clique em links e não forneça dados pessoais.</span>
+            </div>
+          )}
+
           <div className="result-header">
             <div className="result-icon" style={{ background: `${result.color}15`, color: result.color }}>
-              {result.risk === 'safe' ? <ShieldCheck size={28} /> : 
-               result.risk === 'warning' ? <AlertTriangle size={28} /> : 
-               <XCircle size={28} />}
+              {getRiskIcon(result.risk)}
             </div>
             <div className="result-title">
-              <h3 style={{ color: result.color }}>{result.label}</h3>
+              <h3 style={{ color: result.color }}>{result.emoji} {result.label}</h3>
               <div className="risk-meter">
                 <div className="risk-meter-fill" style={{ width: `${result.score}%`, background: result.color }}></div>
               </div>
-              <span className="risk-score">Probabilidade de risco: {result.score}%</span>
+              <span className="risk-score">Probabilidade de fraude: {result.score}%</span>
             </div>
+            {/* Botão analisar novamente */}
+            <button className="btn-reanalyze" onClick={handleReanalyze} disabled={analyzing} title="Analisar novamente">
+              <RefreshCw size={16} className={analyzing ? 'spin' : ''} />
+              <span>Reanalisar</span>
+            </button>
           </div>
 
-          <div className="result-explanation">
-            <h4>Explicacao</h4>
-            <p>{result.explanation}</p>
-          </div>
+          {result.observacao && (
+            <div className="result-observation">
+              <p>{result.observacao}</p>
+            </div>
+          )}
 
-          {result.found.length > 0 && (
-            <div className="result-patterns">
-              <h4>Padroes detectados</h4>
+          {/* Texto extraído da imagem */}
+          {result.textoOcr && (
+            <div className="result-section">
+              <h4>Texto extraído da imagem</h4>
+              <p className="ocr-text">{result.textoOcr}</p>
+            </div>
+          )}
+
+          {/* Alertas */}
+          {result.alertas?.length > 0 && (
+            <div className="result-section">
+              <h4>Alertas detectados</h4>
               <div className="pattern-tags">
-                {result.found.map((p, i) => (
+                {result.alertas.map((a, i) => (
                   <span key={i} className="pattern-tag" style={{ borderColor: result.color, color: result.color }}>
-                    {p}
+                    ⚠ {a}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
+          {/* Palavras-chave do LIME */}
+          {result.palavras?.length > 0 && (
+            <div className="result-section">
+              <h4>Palavras-chave da análise</h4>
+              <div className="keywords-list">
+                {result.palavras.map((p, i) => (
+                  <span key={i} className={`keyword-tag ${p.tipo}`} title={`Contribuição: ${p.contribuicao}`}>
+                    {p.palavra}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Evidências da web */}
+          {result.evidencias && !result.evidencias.erro && (
+            <div className="result-section">
+              <div className="evidencias-header">
+                <h4>Evidências na web</h4>
+                {/* Score de confiabilidade */}
+                {result.evidencias.score_confiabilidade !== undefined && (() => {
+                  const sc = getScoreConfiabilidade(result.evidencias.score_confiabilidade)
+                  return (
+                    <span className="score-confiabilidade" style={{ color: sc.color, borderColor: sc.color }}>
+                      {sc.icon} {sc.label}
+                    </span>
+                  )
+                })()}
+              </div>
+              <p className="evidencias-obs">{result.evidencias.observacao}</p>
+              {result.evidencias.fontes?.length > 0 && (
+                <div className="fontes-list">
+                  {result.evidencias.fontes.map((f, i) => (
+                    <a
+                      key={i}
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`fonte-item ${f.confiavel ? 'confiavel' : f.suspeita ? 'suspeita' : ''}`}
+                    >
+                      <div className="fonte-header">
+                        <span className="fonte-titulo">{f.titulo}</span>
+                        {f.confiavel && <span className="fonte-badge confiavel">✓ Fonte confiável</span>}
+                        {f.suspeita  && <span className="fonte-badge suspeita">⚠ Fonte suspeita</span>}
+                      </div>
+                      <span className="fonte-desc">{f.descricao}</span>
+                      <span className="fonte-url">{f.url}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="result-tips">
-            <h4>Dicas de seguranca</h4>
+            <h4>Dicas de segurança</h4>
             <ul>
-              <li>Nunca compartilhe dados pessoais em sites ou mensagens nao verificados</li>
-              <li>Verifique a fonte da informacao em veiculos confiaveis</li>
+              <li>Nunca compartilhe dados pessoais em sites ou mensagens não verificados</li>
+              <li>Verifique a fonte da informação em veículos confiáveis</li>
               <li>Desconfie de ofertas que parecem boas demais para ser verdade</li>
-              <li>Em caso de duvida, consulte nosso chatbot para mais orientacoes</li>
+              <li>Em caso de dúvida, consulte nosso chatbot para mais orientações</li>
             </ul>
           </div>
         </div>

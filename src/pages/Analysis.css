@@ -149,6 +149,70 @@
   justify-content: center;
 }
 
+/* ── Toggle modo de análise ── */
+.analysis-mode {
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.analysis-mode-label {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.6;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.analysis-mode-options {
+  display: flex;
+  gap: 10px;
+}
+
+.mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 202, 213, 0.1);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.mode-btn:hover {
+  border-color: rgba(0, 202, 213, 0.3);
+}
+
+.mode-btn.active {
+  border-color: var(--primary-cyan);
+  background: rgba(0, 202, 213, 0.08);
+}
+
+.mode-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.mode-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.mode-desc {
+  display: block;
+  font-size: 10px;
+  opacity: 0.5;
+  text-transform: none;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
 .analysis-actions {
   display: flex;
   gap: 12px;
@@ -168,14 +232,8 @@
   transition: opacity 0.2s;
 }
 
-.btn-analyze:hover {
-  opacity: 0.9;
-}
-
-.btn-analyze:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn-analyze:hover { opacity: 0.9; }
+.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-clear {
   padding: 14px 28px;
@@ -188,9 +246,7 @@
   transition: all 0.2s;
 }
 
-.btn-clear:hover {
-  background: rgba(239, 68, 68, 0.2);
-}
+.btn-clear:hover { background: rgba(239, 68, 68, 0.2); }
 
 .spin {
   animation: spin 1s linear infinite;
@@ -201,6 +257,97 @@
   to { transform: rotate(360deg); }
 }
 
+/* ── Banner alto risco ── */
+.danger-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-transform: none;
+  margin-bottom: 20px;
+}
+
+.danger-banner svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ── Botão reanalisar ── */
+.btn-reanalyze {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 202, 213, 0.3);
+  color: var(--primary-cyan);
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.btn-reanalyze:hover:not(:disabled) { background: rgba(0, 202, 213, 0.08); }
+.btn-reanalyze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Evidências header com score ── */
+.evidencias-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.evidencias-header h4 { margin-bottom: 0; }
+
+.score-confiabilidade {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+  text-transform: none;
+}
+
+/* ── Badges nas fontes ── */
+.fonte-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fonte-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  flex-shrink: 0;
+  text-transform: none;
+}
+
+.fonte-badge.confiavel {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22C55E;
+}
+
+.fonte-badge.suspeita {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+}
+
+/* ── Resultado ── */
 .analysis-result {
   background: var(--bg-dark-secondary);
   border: 1px solid;
@@ -208,9 +355,7 @@
   padding: 28px;
 }
 
-.light-mode .analysis-result {
-  background: #ffffff;
-}
+.light-mode .analysis-result { background: #ffffff; }
 
 .result-header {
   display: flex;
@@ -229,9 +374,7 @@
   flex-shrink: 0;
 }
 
-.result-title {
-  flex: 1;
-}
+.result-title { flex: 1; }
 
 .result-title h3 {
   font-size: 18px;
@@ -248,9 +391,7 @@
   margin-bottom: 6px;
 }
 
-.light-mode .risk-meter {
-  background: #E2E8F0;
-}
+.light-mode .risk-meter { background: #E2E8F0; }
 
 .risk-meter-fill {
   height: 100%;
@@ -263,14 +404,16 @@
   opacity: 0.6;
 }
 
-.result-explanation,
-.result-patterns,
-.result-tips {
+/* ── Seções do resultado ── */
+.result-section {
   margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(0, 202, 213, 0.06);
 }
 
-.result-explanation h4,
-.result-patterns h4,
+.result-section:last-child { border-bottom: none; }
+
+.result-section h4,
 .result-tips h4 {
   font-size: 13px;
   font-weight: 700;
@@ -278,13 +421,34 @@
   color: var(--primary-cyan);
 }
 
-.result-explanation p {
+/* Observação do modelo */
+.result-observation {
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
   font-size: 13px;
-  line-height: 1.7;
-  opacity: 0.8;
+  line-height: 1.6;
   text-transform: none;
 }
 
+/* Texto OCR */
+.ocr-text {
+  font-size: 12px;
+  line-height: 1.7;
+  opacity: 0.75;
+  text-transform: none;
+  padding: 12px;
+  background: rgba(0, 202, 213, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 202, 213, 0.1);
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+/* Alertas */
 .pattern-tags {
   display: flex;
   flex-wrap: wrap;
@@ -297,7 +461,83 @@
   border: 1px solid;
   font-size: 11px;
   font-weight: 600;
+  text-transform: none;
 }
+
+/* Palavras-chave LIME */
+.keywords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keyword-tag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.keyword-tag.suspeita  { background: rgba(239, 68, 68, 0.12);  color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.keyword-tag.alto_risco { background: rgba(239, 68, 68, 0.12); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.keyword-tag.confiavel  { background: rgba(34, 197, 94, 0.12);  color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.2); }
+.keyword-tag.neutra     { background: rgba(248, 250, 252, 0.06); color: rgba(248,250,252,0.5); border: 1px solid rgba(248,250,252,0.1); }
+.keyword-tag.duvida     { background: rgba(245, 158, 11, 0.12); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.2); }
+
+/* Evidências */
+.evidencias-obs {
+  font-size: 13px;
+  opacity: 0.8;
+  text-transform: none;
+  margin-bottom: 12px;
+}
+
+.fontes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fonte-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 202, 213, 0.08);
+  background: rgba(0, 202, 213, 0.03);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.fonte-item:hover { border-color: rgba(0, 202, 213, 0.25); }
+
+.fonte-item.confiavel { border-color: rgba(34, 197, 94, 0.2);  background: rgba(34, 197, 94, 0.04); }
+.fonte-item.suspeita  { border-color: rgba(239, 68, 68, 0.2);  background: rgba(239, 68, 68, 0.04); }
+
+.fonte-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-cyan);
+  text-transform: none;
+}
+
+.fonte-desc {
+  font-size: 11px;
+  opacity: 0.6;
+  text-transform: none;
+  line-height: 1.5;
+}
+
+.fonte-url {
+  font-size: 10px;
+  opacity: 0.35;
+  text-transform: none;
+}
+
+/* Dicas */
+.result-tips { margin-bottom: 0; }
 
 .result-tips ul {
   list-style: none;
