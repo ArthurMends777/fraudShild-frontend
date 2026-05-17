@@ -1,0 +1,249 @@
+.history-page {
+  max-width: 1000px;
+}
+
+.history-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 250px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--primary-cyan);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 202, 213, 0.15);
+  background: var(--bg-dark-secondary);
+  color: #F8FAFC;
+  font-size: 13px;
+  text-transform: none;
+}
+
+.light-mode .search-box input {
+  background: #ffffff;
+  border-color: #E2E8F0;
+  color: #1F2937;
+}
+
+.search-box input::placeholder {
+  color: rgba(248, 250, 252, 0.3);
+  text-transform: uppercase;
+}
+
+.light-mode .search-box input::placeholder {
+  color: rgba(31, 41, 55, 0.3);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-cyan);
+}
+
+.filter-group select {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 202, 213, 0.15);
+  background: var(--bg-dark-secondary);
+  color: #F8FAFC;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.light-mode .filter-group select {
+  background: #ffffff;
+  border-color: #E2E8F0;
+  color: #1F2937;
+}
+
+.btn-clear-history {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--result-danger);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-clear-history:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.history-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  flex: 1;
+  background: var(--bg-dark-secondary);
+  border: 1px solid rgba(0, 202, 213, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.light-mode .summary-item {
+  background: #ffffff;
+  border-color: #E2E8F0;
+}
+
+.summary-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.summary-value.safe { color: var(--result-safe); }
+.summary-value.warning { color: var(--result-warning); }
+.summary-value.danger { color: var(--result-danger); }
+
+.summary-label {
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-dark-secondary);
+  border: 1px solid rgba(0, 202, 213, 0.08);
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.light-mode .history-item {
+  background: #ffffff;
+  border-color: #E2E8F0;
+}
+
+.history-item:hover {
+  border-color: rgba(0, 202, 213, 0.2);
+}
+
+.history-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(0, 202, 213, 0.1);
+  color: var(--primary-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.history-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.history-item-type {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.history-item-content {
+  font-size: 12px;
+  opacity: 0.6;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.history-item-date {
+  font-size: 10px;
+  opacity: 0.4;
+}
+
+.history-item-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 20px;
+}
+
+.score-number {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-cyan);
+}
+
+.score-text {
+  font-size: 9px;
+  opacity: 0.5;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.empty-state p {
+  font-size: 13px;
+  text-transform: none;
+  max-width: 400px;
+}
