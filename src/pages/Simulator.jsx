@@ -7,10 +7,10 @@ export default function Simulator() {
   const [session, setSession]           = useState(null)
   const [scenarios, setScenarios]       = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [feedback, setFeedback]         = useState(null) 
+  const [feedback, setFeedback]         = useState(null) // { correct, explanation, isScam }
   const [loading, setLoading]           = useState(true)
   const [answering, setAnswering]       = useState(false)
-  const [cooldown, setCooldown]         = useState(null) 
+  const [cooldown, setCooldown]         = useState(null) // { daysRemaining }
   const [stats, setStats]               = useState(null)
   const [sessionDone, setSessionDone]   = useState(false)
 
@@ -26,7 +26,9 @@ export default function Simulator() {
       const data = await simulatorService.startSession()
       setSession(data)
       setScenarios(data.scenarios)
-      setCurrentIndex(data.answeredCount || 0)
+      // Retoma da primeira pergunta não respondida
+      const firstPending = data.scenarios.findIndex(s => !s.answered)
+      setCurrentIndex(firstPending >= 0 ? firstPending : 0)
       if (data.completedAt) setSessionDone(true)
     } catch (err) {
       if (err.response?.data?.error === 'COOLDOWN') {
