@@ -89,8 +89,9 @@ export default function History() {
           <Filter size={16} />
           <select value={filterType} onChange={e => setFilterType(e.target.value)}>
             <option value="all">Todos os tipos</option>
-            <option value="FAKE_NEWS">Fake News</option>
-            <option value="SCAM">Golpe</option>
+            <option value="TEXT">Texto</option>
+            <option value="URL">Link</option>
+            <option value="IMAGE">Imagem</option>
           </select>
           <select value={filterRisk} onChange={e => setFilterRisk(e.target.value)}>
             <option value="all">Todos os riscos</option>

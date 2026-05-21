@@ -165,3 +165,23 @@
 .chatbot-input-area button:hover {
   opacity: 0.85;
 }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .chatbot-popup {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100% !important;
+    height: 70vh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+  }
+
+  .chatbot-fab {
+    bottom: 16px;
+    right: 16px;
+    width: 50px;
+    height: 50px;
+  }
+}
