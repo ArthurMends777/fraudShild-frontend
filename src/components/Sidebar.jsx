@@ -55,7 +55,7 @@ function UserAvatar({ user, size = 36, className = 'user-avatar' }) {
 
 export { UserAvatar }
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
   const [collapsed, setCollapsed] = useState(false)
   const { user, logout, darkMode, toggleDarkMode } = useApp()
   const navigate = useNavigate()
@@ -68,7 +68,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <ShieldCheck size={28} className="logo-icon" />
@@ -99,6 +99,7 @@ export default function Sidebar() {
             to={item.path}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title={collapsed ? item.label : ''}
+            onClick={onClose}
           >
             <item.icon size={20} />
             {!collapsed && <span>{item.label}</span>}
