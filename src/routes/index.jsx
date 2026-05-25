@@ -11,6 +11,7 @@ import History from '../pages/History'
 import Admin from '../pages/Admin'
 import UsersPage from '../pages/UsersPage'
 import Settings from '../pages/Settings'
+import ResetPassword from '../pages/ResetPassword'
 
 function ProtectedRoute({ children }) {
   const { user } = useApp()
@@ -31,6 +32,8 @@ export function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route
         path="/app"
         element={
