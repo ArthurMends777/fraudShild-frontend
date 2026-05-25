@@ -1,6 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="12" fill="#071025"/>
-  <path d="M32 8L12 18v14c0 12 8 22 20 26 12-4 20-14 20-26V18L32 8z" fill="#00CAD5" opacity="0.3"/>
-  <path d="M32 12L16 20v12c0 10 6.5 18 16 22 9.5-4 16-12 16-22V20L32 12z" stroke="#00CAD5" stroke-width="2" fill="none"/>
-  <path d="M26 32l4 4 8-8" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo -->
+  <rect width="256" height="256" rx="32" fill="#020B2D"></rect>
+
+  <!-- Círculo externo -->
+  <circle cx="128" cy="128" r="76" stroke="#00D9FF" stroke-opacity="0.08" stroke-width="2"></circle>
+
+  <!-- Círculo interno -->
+  <circle cx="128" cy="128" r="52" stroke="#00D9FF" stroke-opacity="0.22" stroke-width="2"></circle>
+
+  <!-- Escudo -->
+  <path d="M128 92
+       C118 101 106 104 98 104
+       V126
+       C98 147 111 163 128 170
+       C145 163 158 147 158 126
+       V104
+       C150 104 138 101 128 92Z" stroke="#00D9FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+
+  <!-- Check -->
+  <path d="M117 129L125 137L141 120" stroke="#00D9FF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
 </svg>
