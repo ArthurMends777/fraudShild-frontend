@@ -325,12 +325,12 @@ export default function Analysis() {
           )}
 
           {/* Evidências da web */}
-          {result.evidencias && !result.evidencias.erro && (
+          {result.evidencias && !result.evidencias.erro && explicar && (
             <div className="result-section">
               <div className="evidencias-header">
                 <h4>Evidências na web</h4>
                 {/* Score de confiabilidade */}
-                {result.evidencias.score_confiabilidade !== undefined && (() => {
+                {(result.evidencias.encontrou_desmentido || result.evidencias.encontrou_confirmacao) && (() => {
                   const sc = getScoreConfiabilidade(result.evidencias.score_confiabilidade)
                   return (
                     <span className="score-confiabilidade" style={{ color: sc.color, borderColor: sc.color }}>
