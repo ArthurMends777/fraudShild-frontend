@@ -270,10 +270,17 @@ export default function Analysis() {
             </div>
             <div className="result-title">
               <h3 style={{ color: result.color }}>{result.emoji} {result.label}</h3>
-              <div className="risk-meter">
-                <div className="risk-meter-fill" style={{ width: `${result.score}%`, background: result.color }}></div>
+              <div className="risk-meter-wrapper">
+                <div className="risk-meter">
+                  <div className="risk-meter-fill" style={{ width: `${result.score}%`, background: result.color }}/>
+                </div>
+                <div className="risk-meter-labels">
+                  <span style={{ color: '#22C55E' }}>Confiável</span>
+                  <span style={{ color: '#F59E0B' }}>Suspeito</span>
+                  <span style={{ color: '#EF4444' }}>Alto risco</span>
+                </div>
+                <span className="risk-score">Probabilidade de fraude: <strong>{result.score}%</strong></span>
               </div>
-              <span className="risk-score">Probabilidade de fraude: {result.score}%</span>
             </div>
             {/* Botão analisar novamente */}
             <button className="btn-reanalyze" onClick={handleReanalyze} disabled={analyzing} title="Analisar novamente">
